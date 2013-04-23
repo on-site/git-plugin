@@ -619,7 +619,7 @@ public class GitSCM extends SCM implements Serializable {
 
     @Override
     public boolean requiresWorkspaceForPolling() {
-        return !remotePoll;
+        return !remotePoll && reference == null;
     }
 
     @Override
@@ -688,6 +688,16 @@ public class GitSCM extends SCM implements Serializable {
         final EnvVars environment = GitUtils.getPollEnvironment(project, workspace, launcher, listener);
 
         FilePath workingDirectory = workingDirectory(workspace,environment);
+        if (reference != null) {
+            // Is there a reference Repo? If so, use that (in many cases
+            // we may have a reference repo but not a current workspace.
+
+            final String expandedReference = environment.expand(reference);
+            final File exRefFile = new File(expandedReference);
+            if (exRefFile.isDirectory()) {
+                workingDirectory = new FilePath(exRefFile);
+            }
+        }
 
         // Rebuild if the working directory doesn't exist
         // I'm actually not 100% sure about this, but I'll leave it in for now.
